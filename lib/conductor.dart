@@ -5,43 +5,6 @@ class ConductorConfigs {
   static Conductor globalConductor = new Conductor();
 }
 
-class DemoPage extends StatefulWidget {
-  @override
-  _DemoPageState createState() => _DemoPageState();
-}
-
-class _DemoPageState extends State<DemoPage> {
-  Conductor sampleConductor = Conductor();
-
-  @override
-  void initState() {
-    sampleConductor.update("number", 1);
-    super.initState();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-        child: ConductorBuilder(
-            category: "counter",
-            delay: Duration(milliseconds: 500),
-            builder: (c, Conductor conductor) {
-              return Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text((conductor.get("number") as int).toString()),
-                    FloatingActionButton(
-                        child: Text("INCREMENT"),
-                        onPressed: () {
-                          conductor
-                              .by("counter")
-                              .update("number", conductor.get("number") + 1);
-                        })
-                  ]);
-            }));
-  }
-}
-
 class ConductorListener {
   Function() callout;
   Duration delay;
