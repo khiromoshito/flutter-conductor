@@ -7,6 +7,10 @@ class ConductorConfigs {
 
 Conductor getGlobalConductor() => ConductorConfigs.globalConductor;
 
+class ConductorCategory {
+  static const String all = "ALL_CATEGORIES";
+}
+
 class ConductorListener {
   Function() callout;
   Duration delay;
@@ -37,10 +41,15 @@ class Conductor {
     this.listeners[id] = listener;
 
     if (listener.category != null) {
-      if (this.categories[listener.category] != null)
-        this.categories[listener.category][id] = listener;
-      else
-        this.categories[listener.category] = {id: listener};
+      List<String> categs =
+          listener.category.split(",").map((c) => c.trim()).toList().cast();
+
+      categs.forEach((categ) {
+        if (this.categories[categ] != null)
+          this.categories[categ][id] = listener;
+        else
+          this.categories[categ] = {id: listener};
+      });
     }
 
     if (this._values == null) this._values = {};
@@ -62,8 +71,7 @@ class Conductor {
 
   dynamic get(String key) => this._values[key].getValue();
 
-  void addListener(String id, ConductorListener listener) {
-
+  void _addConductorListener(String id, ConductorListener listener) {
     this.listeners[id] = listener;
 
     if (listener.category != null) {
@@ -74,14 +82,25 @@ class Conductor {
     }
   }
 
-  Conductor by(String category) => Conductor.fromListeners(
-        this.categories[category] ?? {}, this._values);
-  
+  void addListener(Function() callback,
+      {String id, String category, Duration delay}) {
+    if (id == null)
+      id = "method-listener" + (ConductorConfigs.idcounter++).toString();
+
+    ConductorListener listener = ConductorListener(
+        callout: callback, category: category, delay: delay ?? Duration.zero);
+
+    this._addConductorListener(id, listener);
+  }
+
+  Conductor by(String category) => Conductor.fromListeners({
+        ...(this.categories[category] ?? {}),
+        ...(this.categories[ConductorCategory.all] ?? {})
+      }, this._values);
 
   Conductor only(String id) => this.listeners[id] != null
-        ? Conductor.fromOnly(id, this.listeners[id], this._values)
-        : Conductor(this._values);
-  
+      ? Conductor.fromOnly(id, this.listeners[id], this._values)
+      : Conductor(this._values);
 
   void broadcast() {
     this.listeners.forEach((String id, ConductorListener listener) =>
@@ -121,7 +140,7 @@ class _ConductorBuilderState extends State<ConductorBuilder> {
         ("conductorbuilder-" + (ConductorConfigs.idcounter++).toString());
 
     this.conductor = widget.conductor ?? ConductorConfigs.globalConductor;
-    this.conductor.addListener(
+    this.conductor._addConductorListener(
         this.id,
         ConductorListener(
             callout: callout,
